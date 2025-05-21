@@ -19,7 +19,3 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.kapt) apply false
 }
-
-tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
-}

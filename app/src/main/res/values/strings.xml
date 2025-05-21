@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">NewsApp</string>
+    <string name="http_status_unknown_developer_message">Unknown Error</string>
 </resources>

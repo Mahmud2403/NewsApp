@@ -6,16 +6,17 @@ plugins {
     alias(libs.plugins.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
+    id("kotlinx-serialization")
 }
 
 android {
     namespace = "com.example.newsapp"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.newsapp"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -37,11 +38,11 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -58,6 +59,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.paging)
     implementation(libs.google.material)
+    implementation(libs.xmlutil.serialization)
+    implementation(libs.xmlutil.serialization.jvm)
 
     //Compose
     val composeBom = platform(libs.androidx.compose.bom)
@@ -72,7 +75,6 @@ dependencies {
     implementation(libs.tooling.preview)
     implementation(libs.material.icons.extended)
     implementation(libs.util)
-    androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.tooling)
     debugImplementation(libs.test.manifest)
 
