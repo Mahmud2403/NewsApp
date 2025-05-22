@@ -1,6 +1,6 @@
 package com.example.newsapp.core.di
 
-import com.example.newsapp.core.network.api.RssApi
+import com.example.newsapp.data.remote.api.RssApi
 import com.example.newsapp.core.util.XmlConverterFactory
 import dagger.Module
 import dagger.Provides
