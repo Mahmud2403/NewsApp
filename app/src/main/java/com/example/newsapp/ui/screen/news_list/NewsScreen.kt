@@ -1,6 +1,7 @@
 package com.example.newsapp.ui.screen.news_list
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,8 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,8 +37,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.newsapp.common.CategoryFilterBottomSheet
+import com.example.newsapp.common.EmptyList
 import com.example.newsapp.common.NewsTopBar
 import com.example.newsapp.common.SortDropdownMenu
 import com.example.newsapp.domain.model.NewsArticle
@@ -44,7 +51,7 @@ import com.example.newsapp.ui.screen.news_list.intents.NewsState
 import com.example.newsapp.ui.screen.news_list.vm.NewsViewModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun NewsScreen(
     modifier: Modifier = Modifier,
@@ -58,6 +65,13 @@ fun NewsScreen(
 
     var isSheetOpen by remember { mutableStateOf(false) }
     var isSortMenuOpen by remember { mutableStateOf(false) }
+
+    val refreshState = rememberPullRefreshState(
+        refreshing = (uiState as? NewsState.Success)?.isRefreshing == true,
+        onRefresh = {
+            viewModel.perform(NewsEvent.OnRefresh)
+        }
+    )
 
 
     if (isSheetOpen && uiState is NewsState.Success) {
@@ -115,33 +129,63 @@ fun NewsScreen(
             }
         }
     ) { innerPadding ->
-        when (val currentState = uiState) {
-            is NewsState.Error -> NewsError(
-                modifier = modifier
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pullRefresh(refreshState)
+        ) {
+            PullRefreshIndicator(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .zIndex(2f)
                     .padding(
                         top = innerPadding.calculateTopPadding()
                     ),
-                errorMessage = currentState.message,
-                onRefresh = {
-                    viewModel.perform(NewsEvent.OnRefresh)
-                }
+                refreshing = (uiState as? NewsState.Success)?.isRefreshing == true,
+                state = refreshState,
             )
+            when (val currentState = uiState) {
+                is NewsState.Error -> NewsError(
+                    modifier = modifier
+                        .padding(
+                            top = innerPadding.calculateTopPadding()
+                        ),
+                    errorMessage = currentState.message,
+                    onRefresh = {
+                        viewModel.perform(NewsEvent.OnRefresh)
+                    }
+                )
 
-            NewsState.Loading -> LoadingNews(
-                modifier = modifier
-                    .padding(
-                        top = innerPadding.calculateTopPadding()
-                    )
-            )
+                NewsState.Loading -> LoadingNews(
+                    modifier = modifier
+                        .padding(
+                            top = innerPadding.calculateTopPadding()
+                        )
+                )
 
-            is NewsState.Success -> NewsList(
-                modifier = modifier
-                    .padding(
-                        top = innerPadding.calculateTopPadding()
-                    ),
-                data = currentState.data,
-                onClickNews = onClickNews
-            )
+                is NewsState.Success ->
+                    if (currentState.data.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            EmptyList(
+                                value = "Empty news"
+                            )
+                        }
+                    } else {
+                        NewsList(
+                            modifier = modifier
+                                .padding(
+                                    top = innerPadding.calculateTopPadding()
+                                )
+                                .fillMaxSize(),
+                            data = currentState.data,
+                            onClickNews = onClickNews
+                        )
+                    }
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ sealed class NewsState: BaseViewState {
     data class Success(
         val data: List<NewsArticle> = emptyList(),
         val categories: List<String> = emptyList(),
-        val selectedCategories: Set<String> = emptySet()
+        val selectedCategories: Set<String> = emptySet(),
+        val isRefreshing: Boolean = false,
     ) : NewsState()
 }

@@ -1,5 +1,6 @@
 package com.example.newsapp.data.repository
 
+import android.util.Log
 import com.example.newsapp.base.RequestResponseMergeStrategy
 import com.example.newsapp.base.RequestResult
 import com.example.newsapp.base.map
@@ -14,6 +15,7 @@ import com.example.newsapp.domain.model.NewsArticle
 import com.example.newsapp.domain.repository.NewsRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -29,33 +31,47 @@ class NewsRepositoryImpl @Inject constructor(
 ) : NewsRepository {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun getAllCharacters(): Flow<RequestResult<List<NewsArticle>>> {
+    override suspend fun getAllNews(): Flow<RequestResult<List<NewsArticle>>> {
+        val cacheFlow = getAllFromCache()
+        val networkFlow = getAllFromNetwork()
         val mergeStrategy = RequestResponseMergeStrategy<List<NewsArticle>>()
-        val cache: Flow<RequestResult<List<NewsArticle>>> = getAllFromCache()
-        val network: Flow<RequestResult<List<NewsArticle>>> = getAllFromNetwork()
 
-        return cache.combine(network, mergeStrategy::merge)
+        return cacheFlow.combine(networkFlow, mergeStrategy::merge)
             .flatMapLatest { result ->
-                if (result is RequestResult.Success) {
-                    dao.observeCharacter()
-                        .map { news ->
-                            news.map {
-                                it.toNews()
-                            }
+                when (result) {
+                    is RequestResult.Success -> {
+                        if (result.data.isEmpty()) {
+                            flowOf(RequestResult.Success(emptyList()))
+                        } else {
+                            dao.observeNews()
+                                .map { newsList ->
+                                    val articles = newsList.map { it.toNews() }
+                                    RequestResult.Success(articles)
+                                }
                         }
-                        .map { RequestResult.Success(it) }
-                } else {
-                    flowOf(result)
+                    }
+
+                    is RequestResult.Error -> {
+                        flowOf(RequestResult.Error(error = result.error))
+                    }
+
+                    is RequestResult.InProgress -> {
+                        flowOf(RequestResult.InProgress())
+                    }
                 }
             }
     }
 
+
     private fun getAllFromNetwork(): Flow<RequestResult<List<NewsArticle>>> {
         val request = flow { emit(api.getNewsFeed()) }
             .onEach { result ->
-                if (result.isSuccessful) result.body()?.let { saveNewsToCache(it) }
+                if (result.isSuccessful) result.body()?.let {
+                    saveNewsToCache(it) }
             }
             .map { it.toRequestResult() }
+            .catch { e ->
+                emit(RequestResult.Error(error = e))  }
 
         val start = flowOf<RequestResult<NewsDto>>(RequestResult.InProgress())
         return merge(request, start)
@@ -68,27 +84,25 @@ class NewsRepositoryImpl @Inject constructor(
             }
     }
 
-    private fun saveNewsToCache(data: NewsDto) {
+    private suspend fun saveNewsToCache(data: NewsDto) {
         val entity = data.channel.items.map { it.toNewsEntity() }
         dao.insertNews(entity)
     }
 
-    private suspend fun getAllFromCache(): Flow<RequestResult<List<NewsArticle>>> {
-        val request = dao.getCharacter()
-
-        val end = if (request != null) {
-            flowOf<RequestResult<List<NewsArticleEntity>>>(RequestResult.Success(request))
-        } else {
-            flowOf<RequestResult<List<NewsArticleEntity>>>(RequestResult.Error(error = Throwable("Cache is empty")))
+    private fun getAllFromCache(): Flow<RequestResult<List<NewsArticle>>> {
+        val cached = flow {
+            val news = dao.getNews()
+            emit(news)
         }
-        val start = flowOf<RequestResult<List<NewsArticleEntity>>>(RequestResult.InProgress())
-
-        return merge(start, end).map { newsList ->
-            newsList.map { result ->
-                result.map {
-                    it.toNews()
-                }
+            .map<List<NewsArticleEntity>, RequestResult<List<NewsArticle>>> { list ->
+                RequestResult.Success(list.map { it.toNews() })
             }
-        }
+            .catch { error ->
+                emit(RequestResult.Error(error = error))
+            }
+
+        val start = flowOf<RequestResult<List<NewsArticle>>>(RequestResult.InProgress())
+
+        return merge(start, cached)
     }
 }

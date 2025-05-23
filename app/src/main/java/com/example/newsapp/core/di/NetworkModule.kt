@@ -18,13 +18,11 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    @OptIn(ExperimentalXmlUtilApi::class)
     @Provides
     fun provideXml(): XML = XML {
         autoPolymorphic = true
         indentString = "  "
         isCollectingNSAttributes = true
-//        policy = XmlSerializationPolicy()
     }
 
     @Singleton

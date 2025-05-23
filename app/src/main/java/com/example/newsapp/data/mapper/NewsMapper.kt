@@ -38,6 +38,23 @@ fun NewsArticleEntity.toNews(): NewsArticle =
         category = category.map { it.toCategory() }
     )
 
+fun NewsArticle.toEntity(): NewsArticleEntity =
+    NewsArticleEntity(
+        title = title,
+        description = description,
+        imageUrl = imageUrl,
+        link = link,
+        author = author,
+        pubDate = pubDate,
+        category = category.map { it.toEntity() }
+    )
+
+
+fun Category.toEntity(): CategoryEntity =
+    CategoryEntity(
+        value = value,
+    )
+
 fun CategoryEntity.toCategory(): Category =
     Category(
         value = value,

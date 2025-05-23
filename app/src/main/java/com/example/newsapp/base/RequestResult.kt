@@ -26,14 +26,6 @@ fun <I : Any, O : Any> RequestResult<I>.map(mapper: (I) -> O): RequestResult<O> 
     }
 }
 
-fun <T : Any> Result<T>.toRequestResult(): RequestResult<T> {
-    return when {
-        isSuccess -> RequestResult.Success(getOrThrow())
-        isFailure -> RequestResult.Error()
-        else -> error("Impossible branch")
-    }
-}
-
 fun <T : Any> Response<T>.toRequestResult(): RequestResult<T> {
     return when {
         isSuccessful -> {
@@ -53,5 +45,3 @@ fun <T : Any> Response<T>.toRequestResult(): RequestResult<T> {
         }
     }
 }
-
-

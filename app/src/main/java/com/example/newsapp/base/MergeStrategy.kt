@@ -43,7 +43,7 @@ internal class RequestResponseMergeStrategy<T : Any> : MergeStrategy<RequestResu
         cache: RequestResult.Success<T>,
         server: RequestResult.InProgress<T>
     ): RequestResult<T> {
-        return RequestResult.InProgress(cache.data)
+        return cache
     }
 
     @Suppress("UNUSED_PARAMETER")
