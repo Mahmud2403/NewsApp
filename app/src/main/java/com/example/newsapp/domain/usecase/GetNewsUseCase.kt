@@ -1,5 +1,6 @@
 package com.example.newsapp.domain.usecase
 
+import com.example.newsapp.base.RequestResult
 import com.example.newsapp.base.Result
 import com.example.newsapp.base.asResult
 import com.example.newsapp.domain.model.NewsArticle
@@ -10,6 +11,6 @@ import javax.inject.Inject
 class GetNewsUseCase @Inject constructor(
     private val repository: NewsRepository
 ) {
-    suspend operator fun invoke(): Flow<Result<List<NewsArticle>>> =
-        repository.getNews().asResult()
+    suspend operator fun invoke(): Flow<Result<RequestResult<List<NewsArticle>>>> =
+        repository.getAllCharacters().asResult()
 }

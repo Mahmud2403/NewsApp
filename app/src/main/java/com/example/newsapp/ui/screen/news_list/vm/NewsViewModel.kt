@@ -43,7 +43,7 @@ class NewsViewModel @Inject constructor(
                     is Result.Loading -> updateState { NewsState.Loading }
 
                     is Result.Success -> {
-                        allArticles = result.data
+                        allArticles = result.data.data ?: emptyList()
 
                         pendingSelectedCategories = currentSelectedDCategories().toMutableSet()
 

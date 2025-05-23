@@ -6,5 +6,5 @@ import retrofit2.http.GET
 
 interface RssApi {
     @GET("international/rss")
-    suspend fun getNewsFeed(): NewsDto
+    suspend fun getNewsFeed(): Response<NewsDto>
 }
